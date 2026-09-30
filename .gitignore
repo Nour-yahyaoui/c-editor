@@ -1,0 +1,54 @@
+# Build artifacts — users only need `target/release/c-road`, not the whole
+# `target/` directory which can be hundreds of MB.
+/target/
+
+# Rust/Cargo local state
+Cargo.lock
+
+# Rust compiler and IDE cruft
+*.rs.bk
+*.pdb
+*.rlib
+*.rmeta
+*.d
+
+# Editor / IDE folders
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# Python (if you ever add helper scripts)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Logs and temp files
+*.log
+*.tmp
+*.cache
+npm-debug.log*
+
+# Docker build cache
+.dockerignore
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local scratch space
+/tmp/
+/scratch/
+/playground/

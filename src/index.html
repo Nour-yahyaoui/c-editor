@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C-Road</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/hint/show-hint.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.css">
+<style>
+  :root {
+    --bg: #1e1e1e; --bg2: #181818; --bg3: #252526;
+    --fg: #d4d4d4; --fg2: #9a9a9a; --border: #2d2d2d;
+    --accent: #4a9eff; --accent2: #3a7d44;
+    --err: #ff6b6b; --ok: #6bcf7f; --warn: #ffcc66;
+    --cm-bg: #1e1e1e; --cm-fg: #d4d4d4;
+  }
+  :root.light {
+    --bg: #ffffff; --bg2: #f3f3f3; --bg3: #eaeaea;
+    --fg: #1f2328; --fg2: #5a5a5a; --border: #d8d8d8;
+    --accent: #0969da; --accent2: #1a7f37;
+    --err: #cf222e; --ok: #1a7f37; --warn: #9a6700;
+    --cm-bg: #ffffff; --cm-fg: #1f2328;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  .toolbar {
+    display: flex; gap: 6px; padding: 8px 12px; background: var(--bg2);
+    border-bottom: 1px solid var(--border); align-items: center; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .toolbar button {
+    background: var(--bg3); color: var(--fg); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;
+    font-size: 13px; transition: background .15s;
+  }
+  .toolbar button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .toolbar .run { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .toolbar .run:hover { background: #4a9d54; }
+  .toolbar .stop { background: #8b2e2e; border-color: #a33; color: #fff; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .title { color: var(--fg2); font-size: 12px; }
+
+  .main { flex: 1; display: flex; min-height: 0; position: relative; }
+
+  .sidebar {
+    width: 220px; min-width: 120px; background: var(--bg2);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar h3 {
+    margin: 0; padding: 6px 12px; font-size: 11px; letter-spacing: .1em;
+    color: var(--fg2); background: var(--bg3); border-bottom: 1px solid var(--border);
+    font-weight: 600; flex-shrink: 0;
+  }
+  .file-tree { flex: 1; overflow: auto; padding: 6px; font-size: 13px; }
+  .file-tree .item {
+    padding: 3px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .file-tree .item:hover { background: var(--bg3); }
+  .file-tree .item.active { background: var(--accent); color: #fff; }
+  .file-tree .folder { color: var(--warn); font-weight: 500; }
+  .file-tree .indent-1 { padding-left: 18px; }
+  .file-tree .indent-2 { padding-left: 32px; }
+  .file-tree .indent-3 { padding-left: 46px; }
+
+  .editor-area { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .editor-wrap { flex: 1; position: relative; min-height: 0; overflow: hidden; }
+  #editor { position: absolute; inset: 0; }
+  .CodeMirror { height: 100%; font-size: 14px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace; }
+
+  .splitter-h {
+    height: 5px; background: var(--bg2); cursor: row-resize; flex-shrink: 0;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .splitter-h:hover { background: var(--accent); }
+
+  .console {
+    height: 240px; min-height: 80px; background: var(--bg2);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .console-header {
+    display: flex; align-items: center; gap: 8px; padding: 4px 12px;
+    background: var(--bg3); border-bottom: 1px solid var(--border);
+    font-size: 11px; letter-spacing: .1em; color: var(--fg2); font-weight: 600;
+  }
+  .console-header .status { margin-left: auto; text-transform: none;
+    letter-spacing: 0; font-weight: 400; font-size: 11px; }
+  .console-body {
+    flex: 1; overflow: auto; padding: 8px 12px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 13px; white-space: pre-wrap; word-break: break-word;
+    background: var(--cm-bg); color: var(--cm-fg);
+  }
+  .console-body .err { color: var(--err); }
+  .console-body .ok { color: var(--ok); }
+  .console-body .warn { color: var(--warn); }
+  .console-body .dim { color: var(--fg2); }
+  .console-input {
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+    background: var(--bg3); border-top: 1px solid var(--border);
+  }
+  .console-input .prompt { color: var(--accent); font-family: monospace; font-weight: 600; }
+  .console-input input {
+    flex: 1; background: var(--bg2); color: var(--fg); border: 1px solid var(--border);
+    padding: 5px 8px; border-radius: 4px; font-family: monospace; font-size: 13px;
+    outline: none;
+  }
+  .console-input input:focus { border-color: var(--accent); }
+  .console-input button {
+    background: var(--accent); color: #fff; border: 0; padding: 5px 12px;
+    border-radius: 4px; cursor: pointer; font-size: 12px;
+  }
+
+  .splitter-v {
+    width: 5px; background: var(--bg2); cursor: col-resize; flex-shrink: 0;
+    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+  }
+  .splitter-v:hover { background: var(--accent); }
+
+  .diagnostics {
+    max-height: 140px; overflow: auto; background: var(--bg3);
+    border-top: 1px solid var(--border); font-size: 12px;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .diagnostics:empty { display: none; }
+  .diagnostics .diag {
+    padding: 6px 12px; border-bottom: 1px solid var(--border);
+    cursor: pointer; display: flex; gap: 8px;
+  }
+  .diagnostics .diag:hover { background: var(--bg2); }
+  .diagnostics .diag .loc { color: var(--accent); flex-shrink: 0; font-weight: 600; }
+  .diagnostics .diag.error .loc { color: var(--err); }
+  .diagnostics .diag.warning .loc { color: var(--warn); }
+  .diagnostics .diag .msg { flex: 1; }
+  .diagnostics .diag .sugg { color: var(--ok); margin-top: 3px; font-style: italic; }
+
+  .CodeMirror-gutters { background: var(--bg2) !important; border-right: 1px solid var(--border) !important; }
+  .cm-s-material-darker.CodeMirror { background: #1e1e1e; color: #d4d4d4; }
+  .cm-s-default.CodeMirror { background: #fff; color: #1f2328; }
+
+  .cm-error-line { background: rgba(255,107,107,.15) !important; }
+  .cm-warn-line { background: rgba(255,204,102,.12) !important; }
+  .cm-match-bracket { background: rgba(74,158,255,.35); }
+  .cm-nonmatching-bracket { background: rgba(255,107,107,.45); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="toolbar">
+    <button id="btn-open-file">Open File</button>
+    <button id="btn-open-folder">Open Folder</button>
+    <button id="btn-save">Save</button>
+    <span style="width:1px;height:20px;background:var(--border)"></span>
+    <button class="run" id="btn-run">Run (F5)</button>
+    <button class="stop" id="btn-stop">Stop</button>
+    <button id="btn-clear">Clear</button>
+    <span class="spacer"></span>
+    <button id="btn-theme">Theme: Dark</button>
+    <span class="title" id="file-name">untitled.c</span>
+  </div>
+
+  <div class="main">
+
+    <div class="sidebar" id="sidebar">
+      <h3>EXPLORER</h3>
+      <div class="file-tree" id="file-tree">
+        <div style="padding:8px;color:var(--fg2);font-size:12px">
+          Click "Open Folder" to browse files.
+        </div>
+      </div>
+    </div>
+
+    <div class="splitter-v" id="split-v"></div>
+
+    <div class="editor-area">
+      <div class="editor-wrap">
+        <div id="editor"></div>
+      </div>
+
+      <div class="splitter-h" id="split-h"></div>
+
+      <div class="console" id="console">
+        <div class="console-header">
+          CONSOLE
+          <span class="status" id="status">Ready</span>
+        </div>
+        <div class="diagnostics" id="diagnostics"></div>
+        <div class="console-body" id="console-body"></div>
+        <div class="console-input">
+          <span class="prompt">$</span>
+          <input id="stdin-input" placeholder="type a line of input and press Enter..." autocomplete="off">
+          <button id="stdin-send">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/hint/show-hint.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/searchcursor.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/brace-fold.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/comment-fold.js"></script>
+<script src="/c_data.js"></script>
+
+<script>
+/* ============================================================
+   Theme
+   ============================================================ */
+const THEME_KEY = "croad.theme";
+let currentTheme = localStorage.getItem(THEME_KEY) || "dark";
+
+function applyTheme(name) {
+  document.documentElement.classList.toggle("light", name === "light");
+  const cmTheme = name === "light" ? "default" : "material-darker";
+  editor.setOption("theme", cmTheme);
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--cm-bg").trim();
+  const fg = getComputedStyle(document.documentElement).getPropertyValue("--cm-fg").trim();
+  document.querySelectorAll(".CodeMirror").forEach(el => {
+    el.style.background = bg;
+    el.style.color = fg;
+  });
+  document.getElementById("btn-theme").textContent =
+    name === "light" ? "Theme: Light" : "Theme: Dark";
+}
+
+/* ============================================================
+   Editor
+   ============================================================ */
+const DEFAULT_CODE = `#include <stdio.h>
+
+int main(void) {
+    printf("Hello from C-Road!\\n");
+    return 0;
+}
+`;
+
+const editor = CodeMirror(document.getElementById("editor"), {
+  value: localStorage.getItem("croad.code") || DEFAULT_CODE,
+  mode: "text/x-csrc",
+  theme: "material-darker",
+  lineNumbers: true,
+  indentUnit: 4,
+  tabSize: 4,
+  indentWithTabs: false,
+  autoCloseBrackets: true,
+  matchBrackets: true,
+  foldGutter: true,
+  gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+  extraKeys: {
+    "F5": run,
+    "Ctrl-Space": "autocomplete",
+    "Ctrl-/": "toggleComment",
+    "Ctrl-D": duplicateLine,
+    "Shift-Ctrl-K": deleteLine,
+    "Tab": cm => cm.replaceSelection("    ", "end"),
+  },
+});
+
+editor.on("change", () => {
+  localStorage.setItem("croad.code", editor.getValue());
+});
+
+function duplicateLine(cm) {
+  const cur = cm.getCursor();
+  const line = cm.getLine(cur.line);
+  cm.replaceRange("\n" + line, { line: cur.line, ch: line.length });
+  cm.setCursor({ line: cur.line + 1, ch: cur.ch });
+}
+function deleteLine(cm) {
+  const cur = cm.getCursor();
+  const lineText = cm.getLine(cur.line);
+  cm.replaceRange("", { line: cur.line, ch: 0 },
+                     { line: cur.line + 1, ch: 0 });
+  if (cur.line >= cm.lineCount()) cm.setCursor({ line: cm.lineCount() - 1, ch: 0 });
+}
+
+/* ============================================================
+   Autocomplete
+   ============================================================ */
+const D = window.C_ROAD_DATA;
+
+function cHint(cm) {
+  const cur = cm.getCursor();
+  const line = cm.getLine(cur.line);
+  const before = line.slice(0, cur.ch);
+
+  const incMatch = before.match(/#\s*include\s*<([A-Za-z0-9_./]*)$/);
+  if (incMatch) {
+    const prefix = incMatch[1].toLowerCase();
+    return {
+      list: D.headers.filter(h => h.toLowerCase().startsWith(prefix))
+        .map(h => ({ text: h + ">", displayText: h + ">" })),
+      from: CodeMirror.Pos(cur.line, cur.ch - incMatch[1].length),
+      to: CodeMirror.Pos(cur.line, cur.ch),
+    };
+  }
+
+  const wordMatch = before.match(/[A-Za-z_][A-Za-z0-9_]*$/);
+  if (!wordMatch) return null;
+  const prefix = wordMatch[0];
+  const from = CodeMirror.Pos(cur.line, cur.ch - prefix.length);
+  const to = CodeMirror.Pos(cur.line, cur.ch);
+
+  const list = [];
+  const seen = new Set();
+  function push(text, display, cls) {
+    if (seen.has(text)) return;
+    seen.add(text);
+    list.push({ text, displayText: display || text, className: cls });
+  }
+
+  for (const f of Object.keys(D.functions)) {
+    if (f.startsWith(prefix)) {
+      const info = D.functions[f];
+      push(f + "(", f + "()  -  " + info.sig, "hint-func");
+    }
+  }
+  for (const k of D.keywords) {
+    if (k.startsWith(prefix)) push(k + " ", k + "  -  keyword", "hint-kw");
+  }
+  for (const t of D.types) {
+    if (t.startsWith(prefix)) push(t + " ", t + "  -  type", "hint-type");
+  }
+  for (const m of D.macros) {
+    if (m.startsWith(prefix)) push(m + " ", m + "  -  macro", "hint-macro");
+  }
+  for (const s of Object.keys(D.snippets)) {
+    if (s.startsWith(prefix)) push(D.snippets[s], s + "  -  snippet", "hint-snip");
+  }
+
+  const order = { "hint-func": 0, "hint-kw": 1, "hint-type": 2, "hint-macro": 3, "hint-snip": 4 };
+  list.sort((a, b) => (order[a.className] ?? 9) - (order[b.className] ?? 9));
+
+  if (!list.length) return null;
+  return { list, from, to };
+}
+CodeMirror.registerHelper("hint", "c", cHint);
+editor.setOption("hintOptions", { hint: cHint, completeSingle: false });
+
+editor.on("inputRead", (cm, change) => {
+  if (change.origin !== "+input") return;
+  const c = change.text[0];
+  if (c && /[A-Za-z_#>]/.test(c)) {
+    clearTimeout(window._hintTimer);
+    window._hintTimer = setTimeout(() => cm.showHint({ hint: cHint, completeSingle: false }), 100);
+  }
+});
+
+/* ============================================================
+   Console
+   ============================================================ */
+const consoleBody = document.getElementById("console-body");
+const statusEl = document.getElementById("status");
+const stdinInput = document.getElementById("stdin-input");
+const diagnosticsEl = document.getElementById("diagnostics");
+
+function setStatus(text, cls = "") {
+  statusEl.textContent = text;
+  statusEl.className = "status " + cls;
+}
+
+function appendConsole(text, cls = "") {
+  const span = document.createElement("span");
+  if (cls) span.className = cls;
+  span.textContent = text;
+  consoleBody.appendChild(span);
+  consoleBody.scrollTop = consoleBody.scrollHeight;
+}
+
+function clearConsole() {
+  consoleBody.textContent = "";
+  diagnosticsEl.textContent = "";
+  clearDiagnosticMarkers();
+}
+
+/* ============================================================
+   Diagnostics
+   ============================================================ */
+let diagnosticLines = [];
+
+function clearDiagnosticMarkers() {
+  diagnosticLines.forEach(line => editor.removeLineClass(line, "background", "cm-error-line"));
+  diagnosticLines.forEach(line => editor.removeLineClass(line, "background", "cm-warn-line"));
+  diagnosticLines = [];
+}
+
+function renderDiagnostics(diags) {
+  diagnosticsEl.textContent = "";
+  clearDiagnosticMarkers();
+  for (const d of diags) {
+    const div = document.createElement("div");
+    div.className = "diag " + d.severity;
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "msg";
+    msgDiv.textContent = d.message;
+    if (d.suggestion) {
+      const sg = document.createElement("div");
+      sg.className = "sugg";
+      sg.textContent = "Suggestion: " + d.suggestion;
+      msgDiv.appendChild(sg);
+    }
+    const loc = document.createElement("span");
+    loc.className = "loc";
+    loc.textContent = `line ${d.line}:${d.col}`;
+    div.appendChild(loc);
+    div.appendChild(msgDiv);
+    div.onclick = () => {
+      editor.setCursor({ line: d.line - 1, ch: d.col - 1 });
+      editor.focus();
+    };
+    diagnosticsEl.appendChild(div);
+
+    const lineIdx = d.line - 1;
+    if (d.severity === "error") {
+      editor.addLineClass(lineIdx, "background", "cm-error-line");
+      diagnosticLines.push(lineIdx);
+    } else if (d.severity === "warning") {
+      editor.addLineClass(lineIdx, "background", "cm-warn-line");
+      diagnosticLines.push(lineIdx);
+    }
+  }
+}
+
+async function fetchDiagnostics(code) {
+  try {
+    const res = await fetch("/diagnostics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    renderDiagnostics(data.diagnostics || []);
+  } catch (e) {}
+}
+
+let liveDiagTimer = null;
+editor.on("change", () => {
+  clearTimeout(liveDiagTimer);
+  liveDiagTimer = setTimeout(() => fetchDiagnostics(editor.getValue()), 800);
+});
+
+/* ============================================================
+   Run + WebSocket
+   ============================================================ */
+let ws = null;
+
+function run() {
+  clearConsole();
+  setStatus("Compiling...");
+  const code = editor.getValue();
+  fetchDiagnostics(code);
+
+  if (ws) { try { ws.close(); } catch(e){} }
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+  ws.onopen = () => ws.send(JSON.stringify({ code }));
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.compile_error) {
+      appendConsole(msg.compile_error, "err");
+      setStatus("Compile failed", "err");
+      ws.close();
+    } else if (msg.event === "compiled") {
+      setStatus("Running...");
+    } else if (msg.out !== undefined) {
+      appendConsole(msg.out);
+    } else if (msg.err !== undefined) {
+      appendConsole(msg.err, "err");
+    } else if (msg.exit !== undefined) {
+      appendConsole(`\n[exit code ${msg.exit}]\n`, msg.exit === 0 ? "ok" : "err");
+      setStatus("Done", msg.exit === 0 ? "ok" : "err");
+      ws.close();
+    } else if (msg.error) {
+      appendConsole(msg.error + "\n", "err");
+      setStatus("Error", "err");
+      ws.close();
+    }
+  };
+
+  ws.onerror = () => { appendConsole("WebSocket error\n", "err"); setStatus("Error", "err"); };
+  ws.onclose = () => { ws = null; };
+}
+
+function stop() {
+  if (ws) { try { ws.close(); } catch(e){} ws = null; }
+  setStatus("Stopped", "err");
+}
+
+function sendStdin() {
+  const text = stdinInput.value;
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ stdin: text + "\n" }));
+    appendConsole(text + "\n", "dim");
+    stdinInput.value = "";
+  } else {
+    appendConsole("(program not running)\n", "dim");
+  }
+}
+
+/* ============================================================
+   Splitters
+   ============================================================ */
+function installVSplitter(splitterId, panelId, minWidth, storageKey) {
+  const splitter = document.getElementById(splitterId);
+  const panel = document.getElementById(panelId);
+  let dragging = false;
+  splitter.addEventListener("mousedown", () => { dragging = true; document.body.style.cursor = "col-resize"; });
+  window.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+    const rect = panel.parentElement.getBoundingClientRect();
+    const w = Math.max(minWidth, Math.min(e.clientX - rect.left, rect.width - 200));
+    panel.style.width = w + "px";
+    editor.refresh();
+  });
+  window.addEventListener("mouseup", () => {
+    if (dragging) { dragging = false; document.body.style.cursor = "";
+      localStorage.setItem(storageKey, panel.style.width); editor.refresh(); }
+  });
+  const saved = localStorage.getItem(storageKey);
+  if (saved) panel.style.width = saved;
+}
+
+function installHSplitter(splitterId, panelId, minHeight, storageKey) {
+  const splitter = document.getElementById(splitterId);
+  const panel = document.getElementById(panelId);
+  let dragging = false;
+  splitter.addEventListener("mousedown", () => { dragging = true; document.body.style.cursor = "row-resize"; });
+  window.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+    const rect = panel.parentElement.getBoundingClientRect();
+    const h = Math.max(minHeight, Math.min(rect.bottom - e.clientY, rect.height - 150));
+    panel.style.height = h + "px";
+    editor.refresh();
+  });
+  window.addEventListener("mouseup", () => {
+    if (dragging) { dragging = false; document.body.style.cursor = "";
+      localStorage.setItem(storageKey, panel.style.height); editor.refresh(); }
+  });
+  const saved = localStorage.getItem(storageKey);
+  if (saved) panel.style.height = saved;
+}
+
+/* ============================================================
+   File / Folder
+   ============================================================ */
+let currentFileHandle = null;
+
+async function openFile() {
+  if (window.showOpenFilePicker) {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: "C source",
+          accept: { "text/plain": [".c", ".h", ".cpp", ".cc", ".hpp", ".txt"] } }],
+      });
+      const file = await handle.getFile();
+      const text = await file.text();
+      editor.setValue(text);
+      localStorage.setItem("croad.code", text);
+      currentFileHandle = handle;
+      document.getElementById("file-name").textContent = file.name;
+    } catch (e) {}
+  } else {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".c,.h,.cpp,.cc,.hpp,.txt";
+    inp.onchange = async () => {
+      const file = inp.files[0];
+      if (!file) return;
+      const text = await file.text();
+      editor.setValue(text);
+      localStorage.setItem("croad.code", text);
+      document.getElementById("file-name").textContent = file.name;
+    };
+    inp.click();
+  }
+}
+
+async function saveFile() {
+  const code = editor.getValue();
+  if (currentFileHandle) {
+    try {
+      const writable = await currentFileHandle.createWritable();
+      await writable.write(code);
+      await writable.close();
+      setStatus("Saved", "ok");
+      return;
+    } catch (e) {}
+  }
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: "main.c",
+        types: [{ description: "C source", accept: { "text/plain": [".c", ".h"] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(code);
+      await writable.close();
+      currentFileHandle = handle;
+      const file = await handle.getFile();
+      document.getElementById("file-name").textContent = file.name;
+      setStatus("Saved", "ok");
+    } catch (e) {}
+  } else {
+    const blob = new Blob([code], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "main.c";
+    a.click();
+  }
+}
+
+async function openFolder() {
+  if (!window.showDirectoryPicker) {
+    alert("This browser does not support the File System Access API. Use Chrome or Edge.");
+    return;
+  }
+  try {
+    const dir = await window.showDirectoryPicker();
+    const tree = document.getElementById("file-tree");
+    tree.textContent = "";
+    await renderDirectory(dir, tree, 0);
+  } catch (e) {}
+}
+
+async function renderDirectory(dirHandle, container, depth) {
+  const entries = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (name.startsWith(".")) continue;
+    entries.push({ name, handle });
+  }
+  entries.sort((a, b) => {
+    const aDir = a.handle.kind === "directory";
+    const bDir = b.handle.kind === "directory";
+    if (aDir !== bDir) return aDir ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  for (const { name, handle } of entries) {
+    const div = document.createElement("div");
+    div.className = "item indent-" + Math.min(depth, 3);
+    if (handle.kind === "directory") {
+      div.textContent = "[DIR] " + name;
+      div.classList.add("folder");
+      container.appendChild(div);
+      let expanded = false;
+      let subContainer = null;
+      div.onclick = async () => {
+        if (!expanded) {
+          subContainer = document.createElement("div");
+          container.appendChild(subContainer);
+          await renderDirectory(handle, subContainer, depth + 1);
+          expanded = true;
+        } else {
+          subContainer.style.display = subContainer.style.display === "none" ? "" : "none";
+        }
+      };
+    } else {
+      const ext = name.split(".").pop().toLowerCase();
+      if (!["c", "h", "cpp", "cc", "hpp", "txt"].includes(ext)) continue;
+      div.textContent = name;
+      div.onclick = async () => {
+        const file = await handle.getFile();
+        const text = await file.text();
+        editor.setValue(text);
+        localStorage.setItem("croad.code", text);
+        currentFileHandle = handle;
+        document.getElementById("file-name").textContent = name;
+        document.querySelectorAll(".file-tree .item.active").forEach(el => el.classList.remove("active"));
+        div.classList.add("active");
+      };
+      container.appendChild(div);
+    }
+  }
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+document.getElementById("btn-run").onclick = run;
+document.getElementById("btn-stop").onclick = stop;
+document.getElementById("btn-clear").onclick = clearConsole;
+document.getElementById("btn-open-file").onclick = openFile;
+document.getElementById("btn-open-folder").onclick = openFolder;
+document.getElementById("btn-save").onclick = saveFile;
+document.getElementById("btn-theme").onclick = () => {
+  currentTheme = currentTheme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, currentTheme);
+  applyTheme(currentTheme);
+};
+document.getElementById("stdin-send").onclick = sendStdin;
+stdinInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); sendStdin(); }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "F5") { e.preventDefault(); run(); }
+  if (e.ctrlKey && e.key === "s") { e.preventDefault(); saveFile(); }
+  if (e.ctrlKey && e.key === "o") { e.preventDefault(); openFile(); }
+});
+
+applyTheme(currentTheme);
+installVSplitter("split-v", "sidebar", 120, "croad.sidebarW");
+installHSplitter("split-h", "console", 80, "croad.consoleH");
+
+window.addEventListener("resize", () => editor.refresh());
+</script>
+</body>
+</html>
