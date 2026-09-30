@@ -2,12 +2,12 @@
 
 > A single-binary C editor that runs in your browser. No Python, no Node, no runtime — just one file and `gcc`.
 
-[![Download](https://img.shields.io/badge/Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/Nour-yahyaoui/<repo-name>/releases/latest)
+[![Download](https://img.shields.io/badge/Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/Nour-yahyaoui/c-editor/releases/latest)
 
 ## Install
 
 **Download the latest release:**
-👉 **[github.com/Nour-yahyaoui/<repo-name>/releases/latest](https://github.com/Nour-yahyaoui/<repo-name>/releases/latest)**
+👉 **[github.com/Nour-yahyaoui/c-editor/releases/latest](https://github.com/Nour-yahyaoui/c-editor/releases/latest)**
 
 Pick the file for your system:
 
