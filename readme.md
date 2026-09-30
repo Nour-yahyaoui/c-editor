@@ -1,35 +1,30 @@
-# C-Road Editor — How to Run
+# C-Road Editor
 
-C-Road is a C code editor that runs in your web browser. You write C in the
-editor, press Run, and it compiles and executes with `gcc`. The whole thing
-is one binary — no Python, no Node, no server setup.
+> A single-binary C editor that runs in your browser. No Python, no Node, no runtime — just one file and `gcc`.
 
-This guide covers **Option 1**: build it once on your machine, then run it
-by clicking the binary.
+[![Download](https://img.shields.io/badge/Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/Nour-yahyaoui/<repo-name>/releases/latest)
 
----
+## Install
 
-## What you need
+**Download the latest release:**
+👉 **[github.com/Nour-yahyaoui/<repo-name>/releases/latest](https://github.com/Nour-yahyaoui/<repo-name>/releases/latest)**
 
-**On the machine where you build it (once):**
+Pick the file for your system:
 
-- Rust and Cargo → https://rustup.rs
-- `gcc` on your `PATH`
+| Platform | File | What to do |
+|---|---|---|
+| **Linux** | `c-road` | `chmod +x c-road && ./c-road` |
+| **macOS** | `c-road` | `chmod +x c-road && ./c-road` |
+| **Windows** | `c-road.exe` | Double-click it |
 
-That's it. After the first build, the resulting binary is self-contained —
-you can copy it anywhere and run it by clicking.
+Then open **http://127.0.0.1:8080** in your browser.
 
-**On any machine where you run the binary:**
+You need `gcc` installed on the machine that runs the server:
 
-- `gcc` on your `PATH`
+- Ubuntu / Debian: `sudo apt install gcc`
+- Fedora: `sudo dnf install gcc`
+- Arch: `sudo pacman -S gcc`
+- macOS: `xcode-select --install`
+- Windows: install MinGW-w64 or use WSL
 
-Nothing else. No Rust, no Cargo, no runtimes, no libraries.
-
----
-
-## Step 1 — Install Rust (one time, only if you don't have it)
-
-Open a terminal:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+That's it. No Python, no Cargo, no config files.
