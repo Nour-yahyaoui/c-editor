@@ -41,7 +41,7 @@ struct DiagRes {
 }
 
 // ============================================================================
-// Embedded frontend — kept inside main.rs so the build is a single artifact.
+// Embedded frontend
 // ============================================================================
 
 const INDEX_HTML: &str = r#"<!doctype html>
@@ -84,6 +84,17 @@ const INDEX_HTML: &str = r#"<!doctype html>
     --radius-lg: 12px;
     --cm-bg: #0f0f11;
     --cm-fg: #e4e4e7;
+    /* Code syntax colors (dark) */
+    --code-keyword: #c586c0;
+    --code-type:    #4ec9b0;
+    --code-builtin: #dcdcaa;
+    --code-string:  #ce9178;
+    --code-number:  #b5cea8;
+    --code-comment: #6a737d;
+    --code-preproc: #569cd6;
+    --code-op:      #d4d4d4;
+    --code-var:     #9cdcfe;
+    --code-fn:      #dcdcaa;
     color-scheme: dark;
   }
   :root.light {
@@ -110,6 +121,16 @@ const INDEX_HTML: &str = r#"<!doctype html>
     --shadow-lg: 0 24px 48px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.05);
     --cm-bg: #ffffff;
     --cm-fg: #18181b;
+    --code-keyword: #af00db;
+    --code-type:    #267f99;
+    --code-builtin: #795e26;
+    --code-string:  #a31515;
+    --code-number:  #098658;
+    --code-comment: #6a737d;
+    --code-preproc: #0000ff;
+    --code-op:      #000000;
+    --code-var:     #001080;
+    --code-fn:      #795e26;
     color-scheme: light;
   }
 
@@ -124,7 +145,6 @@ const INDEX_HTML: &str = r#"<!doctype html>
   }
   ::selection { background: var(--accent-ring); color: var(--fg-0); }
 
-  /* Subtle noise texture for depth (no gradient) */
   body::before {
     content: ''; position: fixed; inset: 0; pointer-events: none;
     opacity: .015; z-index: 9999;
@@ -140,7 +160,6 @@ const INDEX_HTML: &str = r#"<!doctype html>
     background: var(--bg-1);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    -webkit-app-region: drag;
   }
   .toolbar .brand {
     display: flex; align-items: center; gap: 8px;
@@ -182,7 +201,6 @@ const INDEX_HTML: &str = r#"<!doctype html>
     cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
     transition: background .12s ease, color .12s ease, border-color .12s ease, box-shadow .12s ease;
     line-height: 1.4; user-select: none;
-    -webkit-app-region: no-drag;
   }
   .btn:hover { background: var(--bg-hover); color: var(--fg-0); }
   .btn:active { background: var(--bg-3); }
@@ -222,7 +240,7 @@ const INDEX_HTML: &str = r#"<!doctype html>
   }
   :root.light .btn .kbd { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.04); }
 
-  /* ---------- Main layout ---------- */
+  /* ---------- Main ---------- */
   .main { flex: 1; display: flex; min-height: 0; }
 
   /* ---------- Sidebar ---------- */
@@ -295,9 +313,7 @@ const INDEX_HTML: &str = r#"<!doctype html>
     border-right: 1.5px solid currentColor;
     border-top-right-radius: 3px;
   }
-  .file-tree .icon.folder {
-    opacity: .8;
-  }
+  .file-tree .icon.folder { opacity: .8; }
   .file-tree .icon.folder::before {
     content: ''; position: absolute; inset: 2px 1px 1px;
     border: 1.5px solid currentColor; border-radius: 2px;
@@ -330,6 +346,59 @@ const INDEX_HTML: &str = r#"<!doctype html>
   .CodeMirror-cursor { border-left: 2px solid var(--accent) !important; }
   .CodeMirror-activeline-background { background: rgba(255,255,255,.018) !important; }
   :root.light .CodeMirror-activeline-background { background: rgba(0,0,0,.02) !important; }
+
+  /* ---------- C syntax colors ---------- */
+  .cm-s-material-darker .cm-keyword,
+  .cm-s-default .cm-keyword { color: var(--code-keyword); font-weight: 500; }
+  .cm-s-material-darker .cm-builtin,
+  .cm-s-default .cm-builtin { color: var(--code-builtin); }
+  .cm-s-material-darker .cm-type,
+  .cm-s-default .cm-type,
+  .cm-s-material-darker .cm-variable-3,
+  .cm-s-default .cm-variable-3 { color: var(--code-type); }
+  .cm-s-material-darker .cm-string,
+  .cm-s-default .cm-string,
+  .cm-s-material-darker .cm-string-2,
+  .cm-s-default .cm-string-2 { color: var(--code-string); }
+  .cm-s-material-darker .cm-number,
+  .cm-s-default .cm-number { color: var(--code-number); }
+  .cm-s-material-darker .cm-comment,
+  .cm-s-default .cm-comment { color: var(--code-comment); font-style: italic; }
+  .cm-s-material-darker .cm-meta,
+  .cm-s-default .cm-meta { color: var(--code-preproc); }
+  .cm-s-material-darker .cm-def,
+  .cm-s-default .cm-def { color: var(--code-fn); }
+  .cm-s-material-darker .cm-variable,
+  .cm-s-default .cm-variable { color: var(--cm-fg); }
+  .cm-s-material-darker .cm-variable-2,
+  .cm-s-default .cm-variable-2 { color: var(--code-var); }
+  .cm-s-material-darker .cm-operator,
+  .cm-s-default .cm-operator { color: var(--code-op); }
+  .cm-s-material-darker .cm-punctuation,
+  .cm-s-default .cm-punctuation { color: var(--code-op); }
+  .cm-s-material-darker .cm-bracket,
+  .cm-s-default .cm-bracket { color: var(--cm-fg); }
+  .cm-s-material-darker .cm-tag,
+  .cm-s-default .cm-tag { color: var(--code-keyword); }
+  .cm-s-material-darker .cm-attribute,
+  .cm-s-default .cm-attribute { color: var(--code-type); }
+  .cm-s-material-darker .cm-property,
+  .cm-s-default .cm-property { color: var(--code-fn); }
+  .cm-s-material-darker .cm-atom,
+  .cm-s-default .cm-atom { color: var(--code-number); }
+
+  /* Bracket matching */
+  .CodeMirror-matchingbracket {
+    background: var(--accent-dim) !important;
+    color: var(--accent) !important;
+    outline: 1px solid var(--accent-ring) !important;
+    border-radius: 2px;
+  }
+  .CodeMirror-nonmatchingbracket {
+    background: rgba(248,113,113,.18) !important;
+    color: var(--err) !important;
+    border-radius: 2px;
+  }
 
   /* ---------- Splitters ---------- */
   .splitter-h {
@@ -417,7 +486,6 @@ const INDEX_HTML: &str = r#"<!doctype html>
     background: var(--bg-0);
     min-height: 100%;
   }
-  .console-body .line { display: block; }
   .console-body .err { color: var(--err); }
   .console-body .ok { color: var(--ok); }
   .console-body .warn { color: var(--warn); }
@@ -425,7 +493,6 @@ const INDEX_HTML: &str = r#"<!doctype html>
   .console-body .prompt-line { color: var(--accent); }
   .console-body .exit-code { color: var(--fg-2); font-style: italic; }
   .console-body .sys { color: var(--fg-2); }
-  .console-body .sys::before { content: ''; }
 
   .diagnostics-list { padding: 8px; }
   .diagnostics-list .diag {
@@ -499,11 +566,11 @@ const INDEX_HTML: &str = r#"<!doctype html>
   }
   .console-input input::placeholder { color: var(--fg-3); }
 
-  /* ---------- Diagnostics inline markers ---------- */
+  /* ---------- Inline diagnostics ---------- */
   .cm-error-line { background: rgba(248,113,113,.10) !important; }
   .cm-warn-line { background: rgba(251,191,36,.08) !important; }
 
-  /* ---------- Autocomplete hint popup ---------- */
+  /* ---------- Autocomplete popup ---------- */
   .CodeMirror-hints {
     background: var(--bg-1) !important;
     border: 1px solid var(--border-strong) !important;
@@ -513,22 +580,47 @@ const INDEX_HTML: &str = r#"<!doctype html>
     font-size: 12.5px !important;
     padding: 4px !important;
     z-index: 100 !important;
+    min-width: 320px !important;
+    max-height: 320px !important;
   }
   .CodeMirror-hint {
-    padding: 5px 10px !important;
+    padding: 6px 10px !important;
     border-radius: var(--radius-sm) !important;
     color: var(--fg-1) !important;
-    white-space: pre;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
+  .CodeMirror-hint::before {
+    content: attr(data-kind);
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 16px;
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 0 5px; border-radius: 3px;
+    background: var(--bg-3); color: var(--fg-2);
+    font-family: 'Inter', sans-serif;
+    flex-shrink: 0;
+  }
+  li.CodeMirror-hint[data-kind="fn"]::before  { background: rgba(220,220,170,.12); color: #dcdcaa; }
+  li.CodeMirror-hint[data-kind="kw"]::before  { background: rgba(197,134,192,.12); color: #c586c0; }
+  li.CodeMirror-hint[data-kind="ty"]::before  { background: rgba(78,201,176,.12);  color: #4ec9b0; }
+  li.CodeMirror-hint[data-kind="mac"]::before { background: rgba(86,156,214,.12);  color: #569cd6; }
+  li.CodeMirror-hint[data-kind="snip"]::before{ background: rgba(91,141,239,.12);  color: var(--accent); }
+  li.CodeMirror-hint[data-kind="hdr"]::before { background: rgba(86,156,214,.12);  color: #569cd6; }
+  :root.light li.CodeMirror-hint[data-kind="fn"]::before  { background: rgba(121,94,38,.12); color: #795e26; }
+  :root.light li.CodeMirror-hint[data-kind="kw"]::before  { background: rgba(175,0,219,.12); color: #af00db; }
+  :root.light li.CodeMirror-hint[data-kind="ty"]::before  { background: rgba(38,127,153,.12); color: #267f99; }
+  :root.light li.CodeMirror-hint[data-kind="mac"]::before { background: rgba(0,0,255,.10);  color: #0000ff; }
+
   .CodeMirror-hint-active {
     background: var(--accent) !important;
     color: #fff !important;
   }
-  li.CodeMirror-hint.hint-func::before { content: ''; }
-  .CodeMirror-hint .hint-kind {
-    display: inline-block; font-size: 10px;
-    padding: 1px 5px; border-radius: 4px;
-    margin-left: 8px; opacity: .7; font-weight: 500;
+  .CodeMirror-hint-active::before {
+    background: rgba(255,255,255,.2) !important;
+    color: #fff !important;
   }
 
   /* ---------- About modal ---------- */
@@ -754,6 +846,7 @@ let currentTheme = localStorage.getItem(THEME_KEY) || "dark";
 
 function applyTheme(name) {
   document.documentElement.classList.toggle("light", name === "light");
+  // "default" is CodeMirror's neutral theme; our CSS overrides every token color.
   editor.setOption("theme", name === "light" ? "default" : "material-darker");
   document.getElementById("btn-theme").textContent =
     name === "light" ? "Light" : "Dark";
@@ -824,12 +917,13 @@ function deleteLine(cm) {
    ============================================================ */
 const D = window.C_ROAD_DATA;
 
-const KIND_LABEL = {
+const KIND_BADGE = {
   "hint-func": "fn",
   "hint-kw": "kw",
   "hint-type": "ty",
   "hint-macro": "mac",
   "hint-snip": "snip",
+  "hint-hdr": "hdr",
 };
 
 function cHint(cm) {
@@ -846,7 +940,6 @@ function cHint(cm) {
           text: h + ">",
           displayText: h + ">",
           className: "hint-hdr",
-          _kind: "hdr",
         })),
       from: CodeMirror.Pos(cur.line, cur.ch - incMatch[1].length),
       to: CodeMirror.Pos(cur.line, cur.ch),
@@ -864,12 +957,16 @@ function cHint(cm) {
   function push(text, display, cls) {
     if (seen.has(text)) return;
     seen.add(text);
-    list.push({ text, displayText: display || text, className: cls });
+    list.push({
+      text,
+      displayText: display || text,
+      className: cls,
+    });
   }
 
   for (const f of Object.keys(D.functions)) {
     if (f.startsWith(prefix)) {
-      push(f + "(", f + "   " + D.functions[f].sig, "hint-func");
+      push(f + "(", f + "(" + "  " + D.functions[f].sig, "hint-func");
     }
   }
   for (const k of D.keywords) {
@@ -882,7 +979,7 @@ function cHint(cm) {
     if (m.startsWith(prefix)) push(m + " ", m, "hint-macro");
   }
   for (const s of Object.keys(D.snippets)) {
-    if (s.startsWith(prefix)) push(D.snippets[s], s, "hint-snip");
+    if (s.startsWith(prefix)) push(D.snippets[s], s + "  (snippet)", "hint-snip");
   }
 
   const order = { "hint-func": 0, "hint-kw": 1, "hint-type": 2, "hint-macro": 3, "hint-snip": 4 };
@@ -890,15 +987,42 @@ function cHint(cm) {
   if (!list.length) return null;
   return { list, from, to };
 }
+
 CodeMirror.registerHelper("hint", "c", cHint);
-editor.setOption("hintOptions", { hint: cHint, completeSingle: false });
+editor.setOption("hintOptions", {
+  hint: cHint,
+  completeSingle: false,
+  alignWithWord: true,
+  closeOnUnfocus: true,
+});
+
+// After the popup renders, stamp each <li> with data-kind so the CSS badge shows.
+const _origShowHint = CodeMirror.showHint;
+CodeMirror.showHint = function (cm, ...rest) {
+  const ret = _origShowHint.apply(this, [cm, ...rest]);
+  setTimeout(() => {
+    document.querySelectorAll(".CodeMirror-hint").forEach(el => {
+      if (el.dataset.kind) return;
+      const cls = el.className || "";
+      if (cls.includes("hint-func")) el.dataset.kind = "fn";
+      else if (cls.includes("hint-kw")) el.dataset.kind = "kw";
+      else if (cls.includes("hint-type")) el.dataset.kind = "ty";
+      else if (cls.includes("hint-macro")) el.dataset.kind = "mac";
+      else if (cls.includes("hint-snip")) el.dataset.kind = "snip";
+      else if (cls.includes("hint-hdr")) el.dataset.kind = "hdr";
+    });
+  }, 0);
+  return ret;
+};
 
 editor.on("inputRead", (cm, change) => {
   if (change.origin !== "+input") return;
   const c = change.text[0];
   if (c && /[A-Za-z_#>]/.test(c)) {
     clearTimeout(window._hintTimer);
-    window._hintTimer = setTimeout(() => cm.showHint({ hint: cHint, completeSingle: false }), 100);
+    window._hintTimer = setTimeout(
+      () => cm.showHint({ hint: cHint, completeSingle: false }), 100
+    );
   }
 });
 
@@ -1026,8 +1150,7 @@ function renderDiagnostics(diags) {
   }
 
   tabProblemsBadge.style.display = "";
-  tabProblemsBadge.textContent =
-    errs > 0 ? `${errs}` : `${warns}`;
+  tabProblemsBadge.textContent = errs > 0 ? `${errs}` : `${warns}`;
   tabProblemsBadge.className = "badge " + (errs > 0 ? "err" : warns > 0 ? "warn" : "");
 }
 
@@ -1375,10 +1498,6 @@ window.addEventListener("resize", () => editor.refresh());
 </html>
 "#;
 
-// ============================================================================
-// HTTP handlers
-// ============================================================================
-
 const C_DATA: &str = r#"window.C_ROAD_DATA = {
   keywords: ["auto","break","case","char","const","continue","default","do",
     "double","else","enum","extern","float","for","goto","if","inline","int",
@@ -1499,6 +1618,11 @@ const C_DATA: &str = r#"window.C_ROAD_DATA = {
   }
 };
 "#;
+
+// ============================================================================
+// HTTP handlers
+// ============================================================================
+
 async fn index() -> impl Responder {
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
